@@ -1,77 +1,88 @@
 ## Описание Алгоритма
-Используем жадный алгоритм для решения данной задачи.
-Сначала заяц собирает всю морковь с 5 полянки. Если морковь на 5 полянке закончилась,
-а количество ходок еще не достигло 10, заяц приступает к комбинациям полянок таких, что сумма весов
-их морковей равна 5. В данном случаи это 4 и 1 полянки, а также 3 и 2 полянки.
-Если количество ходок после этого еще не достигло 10, то заяц начинает собирать морковь с
-1 и 3 полянок, и, закончив с этим, идет собирать полянки морковь с 4 полянки отдельно. Далее заяц идет
-собирать морковь с 1 и 2 полянок (там общий вес составляет уже 3 кг). И последняя часть алгоритма —
-заяц собирает морковь отдельно с 3, 2 и 1 полянок (если суммарное количество ходок все еще не достигло 10).
+Используем жадный алгоритм для решения данной задачи. Начинаем с полянок, где морковь имеет максимальный вес, и постепенно переходим к полянкам с меньшим весом, если заяц еще не достиг максимального количества ходок.
+
+1. Заяц начинает с полянки, где морковь имеет максимальный вес (5 кг). Он собирает всю морковь с этой полянки, пока она не закончится или пока количество ходок не достигнет максимума (10 ходок).
+
+2. Если после этого у заяца остаются еще ходки, он начинает собирать морковь с комбинаций полянок, сумма весов которых равна 5 кг. Например, это могут быть комбинации 4 и 1 кг, или 3 и 2 кг. Заяц продолжает собирать морковь, пока комбинации не исчерпаются или пока не достигнуто максимальное количество ходок.
+
+3. Если после этого у заяца все еще остаются ходки, он переходит к полянкам, где морковь имеет вес на единицу меньше, чем предыдущий максимальный (4 кг), и повторяет процесс.
+
+4. Заяц продолжает этот процесс, постепенно уменьшая максимальный вес моркови, с полянок и их комбинаций, пока не достигнет максимального количества ходок или пока не соберет всю морковь.
+
 Таким образом, реализован жадный алгоритм для сбора моркови с 5 полянок — на каждом этапе заяц ищет полянки или
 их комбинации, на которых получится взять максимально возможное для данного этапа количество моркови.
-
 ## Код
 ```java
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RabbitCarrot {
     public static void main(String[] args) {
         Map<Integer, Integer> map = new HashMap<>();
         // В качестве ключа выступает вес моркови на соответствующей полянке, а значением является количество моркови, растущей там.
-        map.put(1, 0);
-        map.put(2, 0);
-        map.put(3, 0);
+        map.put(1, 6);
+        map.put(2, 7);
+        map.put(3, 8);
         map.put(4, 0);
-        map.put(5, 0);
-        takeCarrots(map);
+        map.put(5, 6);
+
+        takeMaxCarrots(map, 10);
     }
 
-    private static void takeCarrots(Map<Integer, Integer> map) {
+    private static void takeMaxCarrots(Map<Integer, Integer> map, int maxWalks) {
+        int[] totalWeight = {0}; // Используется массив для изменения значения переменной внутри массива.
+        int[] walksLeft = {maxWalks};
+        int[] currentMaxWeight = {5};
 
-        int maxWalks = 10;
-
-        int[] currentWalks = {0}; // Используется массив для изменения значения переменной внутри массива.
-        int[] totalWeight = {0};
-
-        singleIter(map, 5, currentWalks, maxWalks, totalWeight);
-
-        int[][] fieldPairs = {
-                {4, 1},
-                {3, 2},
-                {3, 1}
-        };
-
-        iterOfPairs(map, fieldPairs, currentWalks, maxWalks, totalWeight);
-
-        singleIter(map, 4, currentWalks, maxWalks, totalWeight);
-
-        iterOfPairs(map, new int[][] {{2, 1}}, currentWalks, maxWalks, totalWeight);
-
-        for (int i = 3; i >= 1; i--) {
-            singleIter(map, i, currentWalks, maxWalks, totalWeight);
+        while (currentMaxWeight[0] > 0 && walksLeft[0] > 0) {
+            totalWeight[0] += collectMaxWeight(map, currentMaxWeight, walksLeft);
+            if (walksLeft[0] > 0) {
+                currentMaxWeight[0]--;
+            }
         }
 
-        System.out.println("Количество ходок: " + currentWalks[0] + "\nУнесено моркови: " + totalWeight[0] + " кг");
+        System.out.println("Количество ходок: " + (maxWalks - walksLeft[0]) + "\nУнесено моркови: " + totalWeight[0] + " кг");
     }
 
-    private static void singleIter(Map<Integer, Integer> map, int n, int[] currentWalks, int maxWalks, int[] totalWeight){
-        while (map.get(n) > 0 && currentWalks[0] < maxWalks) {
-            totalWeight[0] += n;
-            currentWalks[0]++;
-            map.computeIfPresent(n, (key, value) -> value - 1);
+    private static int collectMaxWeight(Map<Integer, Integer> map, int[] currentMaxWeight, int[] walksLeft) {
+        int weightCollected = 0;
+
+
+        while (map.get(currentMaxWeight[0]) > 0 && walksLeft[0] > 0) {
+            weightCollected += currentMaxWeight[0];
+            walksLeft[0]--;
+            map.computeIfPresent(currentMaxWeight[0], (key, value) -> value - 1);
         }
-    }
 
-    private static void iterOfPairs(Map<Integer, Integer> map, int[][] fieldPairs, int[] currentWalks, int maxWalks, int[] totalWeight){
-        for (int[] pair : fieldPairs) {
+        List<int[]> pairs = getFieldPairs(map.keySet().toArray(new Integer[0]), currentMaxWeight[0]);
+
+        for (int[] pair : pairs) {
             int pairWeight = pair[0] + pair[1];
-            while (map.get(pair[0]) > 0 && map.get(pair[1]) > 0 && currentWalks[0] < maxWalks) {
-                totalWeight[0] += pairWeight;
-                currentWalks[0]++;
+            while (map.get(pair[0]) > 0 && map.get(pair[1]) > 0 && walksLeft[0] > 0) {
+                weightCollected += pairWeight;
+                walksLeft[0]--;
                 map.computeIfPresent(pair[0], (key, value) -> value - 1);
                 map.computeIfPresent(pair[1], (key, value) -> value - 1);
             }
         }
+
+
+        return weightCollected;
+    }
+
+    private static List<int[]> getFieldPairs(Integer[] fields, int maxWeight) {
+        List<int[]> pairs = new ArrayList<>();
+
+        for (int i = 0; i < fields.length; i++) {
+            for (int j = i + 1; j < fields.length; j++) {
+                if (fields[i] + fields[j] == maxWeight) {
+                    pairs.add(new int[]{fields[i], fields[j]});
+                }
+            }
+        }
+
+        return pairs;
     }
 }
